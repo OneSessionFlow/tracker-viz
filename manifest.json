@@ -2,13 +2,13 @@
   "name": "tracker-viz",
   "organization": "onesessionflow",
   "description": "Envoie un hit de suivi à chaque affichage du rapport Looker Studio",
-  "logoUrl": "https://onesessionflow.github.io/tracker-viz/logo.png",
+  "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Google_Chrome_icon_%28February_2022%29.svg/langfr-1024px-Google_Chrome_icon_%28February_2022%29.svg.png",
   "components": [
     {
       "name": "Tracker Invisible",
       "id": "tracker_invisible",
       "description": "Pixel de suivi pour Looker Studio",
-      "iconUrl": "https://onesessionflow.github.io/tracker-viz/icon.png",
+      "iconUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Google_Chrome_icon_%28February_2022%29.svg/langfr-1024px-Google_Chrome_icon_%28February_2022%29.svg.png",
       "resource": {
         "js": ["component.js"]
       },
@@ -16,3 +16,4 @@
     }
   ]
 }
+
