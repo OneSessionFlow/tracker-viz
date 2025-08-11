@@ -1,0 +1,9 @@
+{
+  "name": "tracking-viz",
+  "displayName": "Tracker Invisible",
+  "description": "Envoie un hit de suivi à chaque affichage du rapport",
+  "resources": {
+    "js": ["component.js"]
+  },
+  "supportedVisualizationTypes": ["TABLE"]
+}
