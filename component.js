@@ -1,97 +1,86 @@
 /* global dscc */
-'use strict';
+(() => {
+  'use strict';
 
-// -- À personnaliser --
-const TRACKING_URL = 'https://script.google.com/macros/s/AKfycbwIlQXJFs8JV_qhB29tHuCD_QYtBOUYgbvC7DiTa9KA8BwxNoHcD3TvewH-OfaCER-b/exec';
-const DEFAULT_UID  = 'hexagone-solar';       // fallback si non fourni via styles
-const TIMEOUT_MS   = 3000;
+  // --- A personnaliser ---
+  const TRACKING_URL = 'https://script.google.com/macros/s/AKfycbwIlQXJFs8JV_qhB29tHuCD_QYtBOUYgbvC7DiTa9KA8BwxNoHcD3TvewH-OfaCER-b/exec';
+  const DEFAULT_UID  = 'hexagone-solar';
 
-// Util: sérialisation d'objets en querystring (pour GET)
-const toQuery = (obj) =>
-  Object.entries(obj)
-    .filter(([, v]) => v != null)
-    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
-    .join('&');
+  // utilitaires
+  const rid = () => (crypto?.randomUUID?.() ? crypto.randomUUID() :
+                    `${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
-// Envoi fiable (POST JSON via sendBeacon si possible, sinon fetch)
-const sendTracking = async (payload) => {
-  try {
-    const body = JSON.stringify(payload);
+  const nowMs = () => Date.now();
 
-    // 1) sendBeacon (POST, asynchrone, très fiable)
-    if (navigator.sendBeacon) {
-      const ok = navigator.sendBeacon(TRACKING_URL, new Blob([body], { type: 'application/json' }));
-      if (ok) return;
-      // sinon, on tente fetch derrière
-    }
-
-    // 2) fetch (fallback)
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
-
-    // keepalive → permet de ne pas “couper” la requête si l’utilisateur change de page
-    await fetch(TRACKING_URL, {
-      method: 'POST',
-      keepalive: true,
-      headers: { 'Content-Type': 'application/json' },
-      body,
-      signal: ctrl.signal,
-    }).catch(() => {/* silence: on ne casse pas le rendu */});
-    clearTimeout(t);
-  } catch {
-    // ne rien jeter dans la console finale pour garder la viz “silencieuse”
-  }
-};
-
-// Récupère des infos utiles du contexte Looker Studio (quand dispo)
-const extractContext = (data) => {
-  // UID configurable depuis le panneau de style (si tu ajoutes un contrôle plus tard)
-  const styleUid =
-    data?.style?.uid?.value ||
-    data?.style?.client_uid?.value ||
-    null;
-
-  // Dimensions du composant (utile si tu veux détecter visibilité)
-  const width  = data?.theme?.themeStyle?.width  ?? null;
-  const height = data?.theme?.themeStyle?.height ?? null;
-
-  // Page/rapport (pas toujours exposé → on met l’URL d’affichage)
-  const href = (typeof window !== 'undefined' && window.location) ? window.location.href : null;
-
-  return {
-    uid: styleUid || DEFAULT_UID,
-    width,
-    height,
-    href,
-  };
-};
-
-// Rendu principal (appelé à chaque draw)
-const draw = async (data) => {
-  const ctx = extractContext(data);
-
-  // Charge utile de tracking
-  const now = Date.now();
-  const payload = {
-    v: 1,
-    ts: now,                  // horodatage ms
-    tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    lang: navigator.language,
-    href: ctx.href,
-    uid: ctx.uid,
-    // anti-cache côté serveur facultatif: un identifiant volatile
-    rid: crypto?.randomUUID?.() ? crypto.randomUUID() : `${now}-${Math.random().toString(36).slice(2)}`,
+  const toQS = (obj) => {
+    const u = new URLSearchParams();
+    Object.entries(obj).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '') u.set(k, String(v));
+    });
+    return u.toString();
   };
 
-  // Envoi
-  await sendTracking(payload);
+  // Envoi GET “sans préflight” (no headers) via balise Image (fiable et évite CORS)
+  const pingViaImage = (urlStr) => {
+    try {
+      const img = new Image(1, 1);
+      img.referrerPolicy = 'no-referrer';
+      img.decoding = 'async';
+      img.loading = 'eager';
+      img.src = urlStr;
+    } catch (_) { /* silencieux */ }
+  };
 
-  // Optionnel: un “pixel” invisible pour occuper le DOM (certains thèmes aiment avoir un nœud)
-  const host = document.body || document.documentElement;
-  const marker = document.createElement('div');
-  Object.assign(marker.style, { width: '1px', height: '1px', opacity: '0', pointerEvents: 'none' });
-  host.appendChild(marker);
-};
+  // Fallback GET fetch keepalive sans headers (simple request)
+  const pingViaFetch = (urlStr) => {
+    try {
+      fetch(urlStr, { method: 'GET', keepalive: true, cache: 'no-store' })
+        .catch(() => {});
+    } catch (_) { /* silencieux */ }
+  };
 
-// Abonnement aux données (aucune transformation, on veut juste le hook de rendu)
-dscc.subscribeToData(draw, { transform: dscc.transformNone });
+  const extractUid = (data) =>
+    data?.style?.client_uid?.value?.trim?.() || DEFAULT_UID;
+
+  const buildUrl = (base, params) => {
+    const u = new URL(base);
+    // merge params dans l'URL existante
+    Object.entries(params).forEach(([k, v]) => u.searchParams.set(k, v));
+    return u.toString();
+  };
+
+  const draw = (data) => {
+    const uid = extractUid(data);
+    const href = (typeof window !== 'undefined' && window.location) ? window.location.href : '';
+    const lang = (typeof navigator !== 'undefined' && navigator.language) ? navigator.language : '';
+    const tz = (Intl?.DateTimeFormat?.().resolvedOptions?.().timeZone) || '';
+
+    const payload = {
+      v: '1',
+      ts: String(nowMs()),
+      uid,
+      href,
+      lang,
+      tz,
+      rid: rid(),            // anti-cache + corrélation
+      // champ “easter egg” pour debug éventuel :
+      dv: 'ls-tracker/1.0.0'
+    };
+
+    const url = buildUrl(TRACKING_URL, payload);
+
+    // 1) image “pixel” (prend quasi toujours)
+    pingViaImage(url);
+    // 2) petit filet de sécurité
+    pingViaFetch(url);
+
+    // garder un nœud invisible (certains thèmes veulent du DOM)
+    const host = document.body || document.documentElement;
+    const marker = document.createElement('div');
+    Object.assign(marker.style, { width: '1px', height: '1px', opacity: '0', pointerEvents: 'none' });
+    host.appendChild(marker);
+  };
+
+  dscc.subscribeToData(draw, { transform: dscc.transformNone });
+})();
+
