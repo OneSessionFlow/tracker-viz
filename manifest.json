@@ -1,15 +1,18 @@
 {
   "name": "tracker-viz",
-  "displayName": "Tracker Invisible",
+  "organization": "onesessionflow",
   "description": "Envoie un hit de suivi à chaque affichage du rapport Looker Studio",
-  "author": "onesessionflow",
-  "organization": "onesession",
-  "logoUrl": "",
-  "privacyPolicyUrl": "",
-  "termsOfServiceUrl": "",
-  "resources": {
-    "js": ["component.js"]
-  },
-  "supportedVisualizationTypes": ["TABLE"],
-  "devMode": false
+  "logoUrl": "https://onesessionflow.github.io/tracker-viz/logo.png",
+  "components": [
+    {
+      "name": "Tracker Invisible",
+      "id": "tracker_invisible",
+      "description": "Pixel de suivi pour Looker Studio",
+      "iconUrl": "https://onesessionflow.github.io/tracker-viz/icon.png",
+      "resource": {
+        "js": ["component.js"]
+      },
+      "config": "index.json"
+    }
+  ]
 }
