@@ -1,6 +1,14 @@
 {
+  "id": "tracker-invisible",
   "data": [],
-  "style": [],
+  "style": [
+    {
+      "id": "client_uid",
+      "label": "Identifiant client (optionnel)",
+      "type": "TEXTINPUT",
+      "defaultValue": ""
+    }
+  ],
   "theme": [],
-  "id": "tracker-invisible"
+  "configVersion": 1
 }
