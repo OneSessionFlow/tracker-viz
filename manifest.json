@@ -1,9 +1,15 @@
 {
-  "name": "tracking-viz",
+  "name": "tracker-viz",
   "displayName": "Tracker Invisible",
-  "description": "Envoie un hit de suivi à chaque affichage du rapport",
+  "description": "Envoie un hit de suivi à chaque affichage du rapport Looker Studio",
+  "author": "onesessionflow",
+  "organization": "onesession",
+  "logoUrl": "",
+  "privacyPolicyUrl": "",
+  "termsOfServiceUrl": "",
   "resources": {
     "js": ["component.js"]
   },
-  "supportedVisualizationTypes": ["TABLE"]
+  "supportedVisualizationTypes": ["TABLE"],
+  "devMode": false
 }
